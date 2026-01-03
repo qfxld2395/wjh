@@ -19,18 +19,76 @@ st.set_page_config(
 )
 
 # 加载模型和数据
+import os
+import sys
+
 @st.cache_resource
 def load_model():
-    model = joblib.load('score_prediction_model.pkl')
-    features = joblib.load('features.pkl')
-    return model, features
+    try:
+        # 获取当前脚本所在目录（这是关键！）
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        # 构建模型文件的绝对路径
+        model_path = os.path.join(script_dir, 'score_prediction_model.pkl')
+        features_path = os.path.join(script_dir, 'features.pkl')
+        
+        # 检查模型文件是否存在
+        if not os.path.exists(model_path):
+            st.error(f"模型文件不存在于路径: {model_path}")
+            st.error(f"脚本目录: {script_dir}")
+            st.error(f"目录中的文件: {', '.join(os.listdir(script_dir))}")
+            st.error(f"当前工作目录: {os.getcwd()}")
+            st.error(f"Python路径: {sys.path}")
+            return None, None
+            
+        if not os.path.exists(features_path):
+            st.error(f"特征文件不存在于路径: {features_path}")
+            st.error(f"脚本目录: {script_dir}")
+            st.error(f"目录中的文件: {', '.join(os.listdir(script_dir))}")
+            return None, None
+        
+        # 加载模型
+        model = joblib.load(model_path)
+        features = joblib.load(features_path)
+        return model, features
+    except Exception as e:
+        st.error(f"加载模型时出错: {str(e)}")
+        st.error(f"当前脚本目录: {os.path.dirname(os.path.abspath(__file__))}")
+        st.error(f"当前工作目录: {os.getcwd()}")
+        st.error(f"Python版本: {sys.version}")
+        st.error(f"Python路径: {sys.path}")
+        st.error(f"目录内容: {os.listdir(os.getcwd())}")
+        return None, None
 
 @st.cache_data
 def load_data():
-    return pd.read_csv('student_data_adjusted_rounded.csv')
+    try:
+        # 获取当前脚本所在目录
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        # 构建数据文件的绝对路径
+        data_path = os.path.join(script_dir, 'student_data_adjusted_rounded.csv')
+        
+        # 检查数据文件是否存在
+        if not os.path.exists(data_path):
+            st.error(f"数据文件不存在于路径: {data_path}")
+            st.error(f"目录中的文件: {', '.join(os.listdir(script_dir))}")
+            return pd.DataFrame()
+        
+        return pd.read_csv(data_path)
+    except Exception as e:
+        st.error(f"加载数据时出错: {str(e)}")
+        st.error(f"当前脚本目录: {os.path.dirname(os.path.abspath(__file__))}")
+        return pd.DataFrame()
 
+# 安全加载模型和数据
 model, features = load_model()
 df = load_data()
+
+# 检查模型是否成功加载
+if model is None or features is None:
+    st.error("模型加载失败，请检查部署环境中的模型文件")
+    st.stop()
 
 # 侧边栏导航
 with st.sidebar:
